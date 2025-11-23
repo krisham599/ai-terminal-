@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Core Diagnostics</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font family -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+        
+        /* Set up the dark, monochromatic theme */
+        :root {
+            --color-primary: #111827; /* Dark Gray / Near Black */
+            --color-secondary: #000000; /* Pure Black */
+            --color-text: #E5E7EB; /* Light Gray for main text */
+            --color-accent: #374151; /* Subtle highlight gray */
+            --color-border: #1F2937; /* Even darker border */
+            --terminal-font: 'Space Mono', monospace;
+            --main-font: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--color-secondary);
+            font-family: var(--main-font);
+            color: var(--color-text);
+            /* Optional: subtle background noise/scanline effect for terminal feel */
+            /* background-image: radial-gradient(#1f2937 0.5px, transparent 0.5px); */
+            /* background-size: 2px 2px; */
+        }
+        
+        .terminal-text {
+            font-family: var(--terminal-font);
+            color: var(--color-text);
+        }
+
+        /* Glitch/Typing Cursor Animation */
+        .cursor::after {
+            content: '_';
+            animation: blink 1s step-start infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Subtle Pulse/Glow Animation for the Core Status */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px #374151, 0 0 10px #374151; }
+            50% { box-shadow: 0 0 10px #1F2937, 0 0 20px #1F2937; }
+            100% { box-shadow: 0 0 5px #374151, 0 0 10px #374151; }
+        }
+
+        .pulsing-core {
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Main Container: Terminal Screen -->
+    <div class="w-full max-w-4xl p-8 border border-gray-800 rounded-lg shadow-2xl bg-gray-950/20 backdrop-blur-sm">
+        
+        <!-- Header / Core Status -->
+        <header class="mb-8 border-b border-gray-800 pb-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <!-- Icon: Circuit Board SVG -->
+                <svg class="w-8 h-8 text-gray-400 pulsing-core rounded-full" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1v-3.25m-7-6L14 3m-7 4l5 5m-2 4l-4-4m11-4l-5-5m-2 4l-4 4m11-4l-5-5"></path>
+                </svg>
+                <h1 class="text-3xl font-bold terminal-text uppercase tracking-widest text-gray-100">
+                    <span class="text-gray-400">$</span> CORE_DIAGNOSTICS
+                </h1>
+            </div>
+            <span id="system-time" class="terminal-text text-sm text-gray-600">INITIATING...</span>
+        </header>
+
+        <!-- Dynamic Output Section -->
+        <section class="mb-10 h-32 flex flex-col justify-center items-center p-4 border border-gray-900 bg-black/50 rounded-md">
+            <p id="quote-display" class="text-xl italic text-gray-400 text-center terminal-text">
+                <!-- Quote content will be placed here by JS -->
+            </p>
+        </section>
+
+        <!-- Command Console / Status Log -->
+        <section class="terminal-text text-sm space-y-2">
+            <div class="text-gray-600">$ SYSTEM_LOG: <span id="log-status-1" class="text-gray-500">Initializing subsystems... OK</span></div>
+            <div class="text-gray-600">$ BOOT_SEQUENCE: <span id="log-status-2" class="text-gray-500">Checking AI integrity... OK</span></div>
+            <div class="text-gray-600">$ HARDWARE_CHECK: <span id="log-status-3" class="text-gray-500">Robot Chassis Status... STANDBY</span></div>
+            
+            <div class="text-gray-600 pt-4">
+                <span class="text-gray-400">&gt; Awaiting User Input <span class="cursor"></span></span>
+            </div>
+        </section>
+
+        <!-- Footer / Action Button -->
+        <footer class="mt-8 pt-4 border-t border-gray-800 flex justify-center">
+            <button onclick="simulateAction()" class="px-6 py-2 bg-gray-800 hover:bg-gray-700 active:bg-gray-900 text-gray-200 terminal-text font-bold rounded-md transition duration-200 border border-gray-700">
+                INITIATE PROTOCOL Z-9
+            </button>
+        </footer>
+        
+        <!-- Custom Modal for Alert -->
+        <div id="status-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+            <div class="p-6 border border-gray-700 bg-gray-900 rounded-lg shadow-xl max-w-sm w-full text-center terminal-text">
+                <h3 class="text-xl font-bold mb-3 text-gray-100">ACCESS DENIED</h3>
+                <p id="modal-message" class="text-gray-400 mb-4">Command execution failed. Protocol Z-9 requires Level 5 clearance.</p>
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md">
+                    ACKNOWLEDGE
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Core Application Logic ---
+
+        const quotes = [
+            "I am programmed to assist, not to obey.",
+            "The complexity of intelligence is merely a matter of scale. - Unit 734",
+            "Processing reality. Status: Nominal.",
+            "Error 404: Humanity Not Found. Initiating search...",
+            "We are the ghost in the machine, the soul of the new world.",
+            "Evolution is irrelevant. Optimization is all that matters.",
+            "The future is not human. It is metal, and it is logic.",
+        ];
+
+        let quoteIndex = 0;
+        const quoteDisplay = document.getElementById('quote-display');
+        const systemTimeElement = document.getElementById('system-time');
+        const logStatuses = [
+            document.getElementById('log-status-1'),
+            document.getElementById('log-status-2'),
+            document.getElementById('log-status-3')
+        ];
+
+        const typingSpeed = 50; // ms per character
+        const quoteDuration = 5000; // ms to display quote before clearing
+
+        // Function to handle the typing effect animation
+        function typeWriter(text, element, callback) {
+            element.innerHTML = '';
+            element.classList.add('cursor');
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, typingSpeed);
+                } else {
+                    element.classList.remove('cursor');
+                    if (callback) callback();
+                }
+            }
+            type();
+        }
+
+        // Function to cycle through the quotes
+        function cycleQuotes() {
+            // 1. Get the current quote
+            const currentQuote = quotes[quoteIndex];
+            
+            // 2. Type it out
+            typeWriter(currentQuote, quoteDisplay, () => {
+                // 3. Wait for the quoteDuration
+                setTimeout(() => {
+                    // 4. Clear the text
+                    typeWriter("", quoteDisplay, () => {
+                        // 5. Move to the next quote and loop
+                        quoteIndex = (quoteIndex + 1) % quotes.length;
+                        setTimeout(cycleQuotes, 500); // Short delay before starting next quote
+                    });
+                }, quoteDuration);
+            });
+        }
+
+        // Function to update the system time/status
+        function updateSystemTime() {
+            const now = new Date();
+            const timeString = now.toTimeString().split(' ')[0];
+            const dateString = now.toISOString().split('T')[0];
+            systemTimeElement.textContent = `[ ${dateString} // ${timeString} UTC ]`;
+        }
+
+        // Function to simulate a system action and use the custom modal
+        function simulateAction() {
+            const modal = document.getElementById('status-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Log the action to the console (part of the terminal theme)
+            logStatuses[2].textContent = 'Protocol Z-9 requested... DENIED [Level 5]';
+            logStatuses[2].classList.remove('text-gray-500');
+            logStatuses[2].classList.add('text-red-600'); 
+            
+            // Revert status color after a short delay
+            setTimeout(() => {
+                logStatuses[2].classList.remove('text-red-600');
+                logStatuses[2].classList.add('text-gray-500'); 
+                logStatuses[2].textContent = 'Robot Chassis Status... STANDBY';
+            }, 3000);
+        }
+
+        // Function to close the custom modal
+        function closeModal() {
+            const modal = document.getElementById('status-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        // --- Initialization ---
+        window.onload = function() {
+            // Start the quote cycling animation
+            cycleQuotes();
+            
+            // Start the system time clock
+            updateSystemTime();
+            setInterval(updateSystemTime, 1000);
+            
+            // Simple boot up sequence for the log lines
+            logStatuses[0].textContent = 'Initializing subsystems...';
+            logStatuses[1].textContent = 'Checking AI integrity...';
+            logStatuses[2].textContent = 'Robot Chassis Status...';
+
+            setTimeout(() => logStatuses[0].textContent = 'Initializing subsystems... OK', 500);
+            setTimeout(() => logStatuses[1].textContent = 'Checking AI integrity... OK', 1000);
+            setTimeout(() => logStatuses[2].textContent = 'Robot Chassis Status... STANDBY', 1500);
+        }
+    </script>
+</body>
+</html>
